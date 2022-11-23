@@ -3,24 +3,24 @@
     "path": "V:/LCSU/Business Intelligence/AdHoc/_Individual_Work_Areas/Scott Johnson/To Be Deleted/fingerTips/fingerTipsRPHOF/fingerTipsR.R",
     "project_path": "fingerTipsR.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "3415138135",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1669195995957.0,
     "source_on_save": false,
     "relative_order": 1,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "14,0",
-        "scrollLine": "0"
+        "cursorPosition": "58,24",
+        "scrollLine": "26"
     },
     "folds": "",
-    "lastKnownWriteTime": 1669194939,
+    "lastKnownWriteTime": 1669201788,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1669196013458,
+    "last_content_update": 1669201789061,
     "read_only": false,
     "read_only_alternatives": []
 }

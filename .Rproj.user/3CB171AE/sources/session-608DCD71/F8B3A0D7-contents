@@ -1,0 +1,47 @@
+#load packages as required
+if(!require('tidyverse')) install.packages('tidyverse')
+if(!require('DBI')) install.packages('DBI')
+if(!require('odbc')) install.packages('odbc')
+if(!require('RODBC')) install.packages('RODBC')
+if(!require('PHEindicatormethods')) install.packages('PHEindicatormethods')
+if(!require('epitools')) install.packages('epitools')
+if(!require('broom')) install.packages('broom')
+
+#connect to SQL
+SQLConnection <-dbConnect(odbc(),
+                          Driver="SQL Server",
+                          Server="MLCSU-BI-SQL",
+                          Database="AnalystLocal",
+                          Trusted_Connection="True")
+
+#create empty df
+combinedData <- data.frame(
+                            MetricID = integer(),
+                            InterventionID = integer(),
+                            FinancialYear = character(),
+                            FinancialMonth = integer(),
+                            OrganisationCode = character(),
+                            OrganisationName = character(),
+                            Numerator = numeric(),
+                            Denominator = numeric(),
+                            ComparatorNumerator = numeric(),
+                            ComparatorDenominator = numeric(),
+                            LoadDate = as.POSIXct(character())
+                          )
+
+#read in and run metric R scripts
+list.files('rScripts', full.names = TRUE) %>% map(source)
+
+
+#write all data to SQL
+dbWriteTable(
+          conn = SQLConnection, 
+          SQL('lancs.WorkSJ_20220804_MM_factMetrics'),
+          value = combinedData, 
+          row.names = NULL, 
+          overwrite = TRUE
+             )
+
+
+
+

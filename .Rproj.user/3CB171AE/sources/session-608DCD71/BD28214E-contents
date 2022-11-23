@@ -1,0 +1,72 @@
+if(!require("tidyverse")) install.packages("tidyverse")
+if(!require("odbc")) install.packages("odbc")
+if(!require("DBI")) install.packages("DBI")
+
+
+library(tidyverse)
+library(odbc)
+library(DBI)
+
+setwd("H:/Performance and BI/Scott/Population Health/Inequalities/Flu vaccinations/Winter22-23/RawData")
+
+#setwd("//canlrli-vlnccg2.xcanl.nhs.uk/Performance and BI/Scott/Population Health/Inequalities/Flu vaccinations/Winter22-23/RawData")
+
+ListOfFiles <- list.files(pattern="*.csv")
+
+
+
+con <- dbConnect(odbc(),
+                 Driver = "SQL Server",
+                 Server = "MLCSU-BI-SQL",
+                 Database = "AnalystLocal",
+                 Trusted_Connection = "True"
+)
+
+
+
+for(i in ListOfFiles){
+  
+  
+  
+  HeaderData <-     read.csv(i,  
+                           skip = 11, header = T)
+  
+  
+
+  
+  names(HeaderData)[names(HeaderData) == 'Organisation.Code'] <- 'Organisation Code'
+  
+  names(HeaderData)[names(HeaderData) == 'Organisation.Name'] <- 'Organisation Name'
+  
+  names(HeaderData)[names(HeaderData) == 'Anonymised.Identifier'] <- 'Anonymised Identifier'
+  
+  names(HeaderData)[names(HeaderData) == 'Ethnic.Origin'] <- 'Ethnic Origin'
+  
+  names(HeaderData)[names(HeaderData) == 'Lower.Layer.Area..2011.'] <- 'Lower Layer Area (2011)'
+  
+  names(HeaderData)[names(HeaderData) == 'Code.Term'] <- 'QOF MH Register'
+  
+  names(HeaderData)[names(HeaderData) == 'Date'] <- 'QOF MH Register Date'
+  
+  names(HeaderData)[names(HeaderData) == 'Code.Term.1'] <- 'LD Register'
+  
+  names(HeaderData)[names(HeaderData) == 'Date.1'] <- 'LD Register Date'
+  
+  names(HeaderData)[names(HeaderData) == 'Date.2'] <- 'Flu Vaccine Date 21/22'
+  
+  names(HeaderData)[names(HeaderData) == 'Code.Term.2'] <- 'Flu Vaccine 21/22'
+  
+  names(HeaderData)[names(HeaderData) == 'Date.3'] <- 'Flu Vaccine Date 22/23'
+  
+  names(HeaderData)[names(HeaderData) == 'Code.Term.3'] <- 'Flu Vaccine 22/23'
+  
+  HeaderData <- subset(HeaderData, select = -X)
+  
+  
+  
+  HeaderData$LoadDate <- Sys.time()
+  
+  dbWriteTable(conn = con, SQL("Lancs.WorkSJ_20220928_FluVaccinations_Winter22_23"), value = HeaderData, append = TRUE)
+  
+}
+

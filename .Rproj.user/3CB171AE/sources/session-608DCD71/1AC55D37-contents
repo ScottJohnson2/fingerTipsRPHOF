@@ -1,0 +1,76 @@
+need_packages <- c(
+  'config',
+  'plyr',
+  'rlang',
+  'odbc',
+  'readxl',
+  'tidyverse',
+  'PHEindicatormethods'
+)
+
+installed <- need_packages %in% installed.packages()
+if(length(need_packages[!installed]) > 0) install.packages(need_packages[!installed])
+lapply(need_packages, library, character.only = TRUE)
+
+options(stringsAsFactors = FALSE)
+
+config <- get()
+
+# Load custom functions
+invisible(
+  lapply(
+    Sys.glob("user_defined_functions/*.R"),
+    function(x) source(x)
+  )
+)
+
+# Load population data
+cat("\nLoading Population Data")
+population_data <- get_population()
+
+# Calculate Stuff
+run_events <- lapply(
+  c("Admissions", "Mortality"),
+  function(t, population) {
+    # Get admissions data or mortality data
+    cat("\nLoading", t, "Data\n")
+    events <- get_events(t)
+
+    # Make sure previous event runs aren't saved with current event type
+    life_expectancy_slopes <- NULL
+    
+    # Calculate the life-expectancy at birth of an event happening
+    # Assume the event happens on average in the middle of the person's age band
+    cat("\tCalculating Life Expectancy ( for", t, ") At Birth\n")
+    life_expectancy_slopes <- calculate_le_slopes_and_confidence(
+      events, population, "total"
+    )
+    
+    # IMD slope calculation
+    cat("\tCalculating DSR, SII, and RII for", t, "\n")
+    index_of_inequality <- data.frame()
+    index_of_inequality <- lapply(
+      c("total", "chapter_code", "cat1_code", "cat2_code", "cat3_code", "cat4_code", "icd_10"),
+      function(c, e, p) {
+        cat("\t\tRunning level:" , c, "\n")
+        slope <- calculate_slopes_and_confidence(e, p, c)
+        
+        bind_rows(index_of_inequality, slope)
+      },
+      e = events,
+      p = population
+    )
+    
+    # Save SII/RII, DSRs, and Life-Expectancies
+    cat("\tSaving", t, "Data\n")
+    
+    saveRDS(index_of_inequality, paste0(t, '_total_indices.RDS'))
+    saveRDS(distinct(save_dsr), paste0(t, '_dsr.RDS'))
+    saveRDS(life_expectancy, paste0(t, '_life_expectancy.RDS'))
+    saveRDS(life_expectancy_slopes, paste0(t, '_life_expectancy_slopes.RDS'))
+    
+    save_dsr <- NULL
+    life_expectancy <- NULL
+  },
+  population = population_data
+)
