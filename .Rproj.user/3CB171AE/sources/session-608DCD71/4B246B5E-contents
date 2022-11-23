@@ -1,0 +1,97 @@
+
+if(!require('devtools')) install.packages('devtools')
+if(!require('tidyverse')) install.packages('tidyverse')
+if(!require('data.table')) install.packages('data.table')
+if(!require('DBI')) install.packages('DBI')
+if(!require('odbc')) install.packages('odbc')
+if(!require('writexl')) install.packages('writexl')
+
+
+devtools::install_github("PublicHealthEngland/fingertipsR")
+
+if(!require('fingertipsR')) install.packages('fingertipsR')
+
+
+
+
+
+SQLconnection <-dbConnect(odbc(),
+                   Driver="SQL Server",
+                   Server="MLCSU-BI-SQL",
+                   Database="AnalystGlobal",
+                   Trusted_Connection="True")
+
+SQLquery<-
+"SELECT DISTINCT 
+	   [LA_UA_Code2]
+      ,[LA_UA_Name]
+FROM [UK_Health_Dimensions].[ODS].[Local_Authorities_Unitary_Authorities_UK_v1_SCD]
+WHERE [LA_UA_Name] IN ('Barrow-in-Furness','South Lakeland','Lancaster')
+"
+
+
+listOfDistricts <-dbGetQuery(SQLconnection,
+                     SQLquery)%>%as_tibble()
+
+indicators <- indicators()
+
+areaTypes <- area_types()
+
+
+
+indicatorAreaTypes <- indicator_areatypes()
+
+
+
+profiles <- profiles(ProfileName = "Public Health Outcomes Framework")
+
+
+
+publicHealthOutcomesFrameworkProfileID <- unique(profiles$ProfileID)
+                                                
+lowerTierAreaTypes <- areaTypes %>%
+                        filter(AreaTypeName %like% 'Lower tier local authorities')
+
+lowerTierAreaID <- lowerTierAreaTypes %>%
+                      select(AreaTypeID) %>%
+                      unique() %>%
+                      list()
+
+
+
+data <- fingertips_data(AreaTypeID = 101 ,AreaCode = 'E07000027', 
+                ProfileID = 19, rank = TRUE)
+
+data <- unite(data, col = 'refColumn', c('IndicatorID','AreaCode','AreaType','Sex','Age','Category'),sep = '|', remove = FALSE)
+
+data <- transform(data, ID = as.numeric(factor(refColumn)))
+
+latestValues <- data %>% group_by(ID) %>% summarise(Timeperiod = max(Timeperiod))
+
+
+latestData <- inner_join(data, latestValues, by = c('ID','Timeperiod'))
+
+
+latestData <- latestData %>% mutate(combinedRank = case_when(Polarity == 'RAG - Low is good' ~ (AreaValuesCount + 1) - Rank, 
+                                                    TRUE ~ Rank))
+
+
+
+worseData <- latestData %>% filter(ComparedtoEnglandvalueorpercentiles == 'Worse' | ComparedtoRegionvalueorpercentiles == 'Worse')
+
+betterData <- latestData %>% filter(ComparedtoEnglandvalueorpercentiles == 'Better' | ComparedtoRegionvalueorpercentiles == 'Better')
+
+
+
+
+
+
+write_xlsx(list(WorseIndicators = worseData, BetterIndicators = betterData), 'BarrowPHOF.xlsx')
+
+
+
+#data <- fingertips_data(AreaTypeID = 101 ,AreaCode = 'E07000027', 
+ #                       ProfileID = 19, rank = TRUE)
+
+
+
