@@ -1,0 +1,4 @@
+install.packages('remotes')
+
+# Install using the remotes package
+remotes::install_github('rstudio/shinyuieditor')
