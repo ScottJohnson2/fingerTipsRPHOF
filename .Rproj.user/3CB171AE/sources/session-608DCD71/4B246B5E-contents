@@ -25,17 +25,16 @@ listOfDistricts <-dbGetQuery(SQLconnection,
                              districtsSQLQuery)%>%as_tibble()
 
 
-#indicators <- indicators()
-#areaTypes <- area_types()
-#indicatorAreaTypes <- indicator_areatypes()
-#profiles <- profiles(ProfileName = "Public Health Outcomes Framework")
-#publicHealthOutcomesFrameworkProfileID <- unique(profiles$ProfileID)
+
+profiles <- profiles(ProfileName = "Public Health Outcomes Framework")
+
+profile <- unique(profiles$ProfileID)
 
 
 
 for (i in listOfDistricts$LA_UA_Code2){
  data <- fingertips_data(AreaTypeID = 101 ,AreaCode = i, 
-                ProfileID = 19, rank = TRUE) 
+                ProfileID = profile, rank = TRUE) 
  
 data <- unite(data, col = 'refColumn', c('IndicatorID','AreaCode','AreaType','Sex','Age','Category'),sep = '|', remove = FALSE)
 
@@ -52,13 +51,13 @@ latestData <- latestData %>% mutate(combinedRank = case_when(Polarity == 'RAG - 
 
 worseData <- latestData %>% filter(ComparedtoEnglandvalueorpercentiles == 'Worse' | ComparedtoRegionvalueorpercentiles == 'Worse')
 
-worseData <- worseData %>% order_by(combinedRank)
+worseData <- worseData %>% arrange(combinedRank)
 
 betterData <- latestData %>% filter(ComparedtoEnglandvalueorpercentiles == 'Better' | ComparedtoRegionvalueorpercentiles == 'Better')
 
-betterData <- betterData %>% order_by(combinedRank)
+betterData <- betterData %>% arrange(combinedRank)
 
-excelName <- paste('excelOutputs/',unique(data$AreaName),'PHOF.xlsx')
+excelName <- str_replace_all(paste('excelOutputs/',unique(data$AreaName),'PHOF.xlsx'),' ','_')
 
 write_xlsx(list(WorseIndicators = worseData, BetterIndicators = betterData), excelName)
 }
