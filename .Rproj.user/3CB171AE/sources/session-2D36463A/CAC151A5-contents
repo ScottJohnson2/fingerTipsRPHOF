@@ -1,0 +1,26 @@
+tableB <- tableData %>% 
+  group_by(IndicatorNameSub) %>%
+  gt(rowname_col = 'Age') %>%
+  gt_theme_538() %>%
+  tab_stubhead(label = 'Indicator Group') %>%
+  #tab_source_note(md('**data**: PHE Fingertips Public Health Outcomes Framework')) %>%
+  data_color(
+    columns = combinedRank,
+    colors = scales::col_numeric(
+      paletteer::paletteer_d(
+        palette = "ggsci::green_material") %>% as.character(),
+      domain = NULL,
+      reverse = TRUE
+    )
+  )
+
+
+
+
+
+
+
+c(table,tableB) %>% gtsave('combinedTables.docx')
+
+
+

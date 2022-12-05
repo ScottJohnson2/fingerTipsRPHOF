@@ -50,7 +50,7 @@ tableData$IndicatorNameSub <- trimws(tableData$IndicatorNameSub, which = 'both',
 
 #add to GT table format
 
-table <- tableData %>% 
+tableB <- tableData %>% 
   group_by(IndicatorNameSub) %>%
   gt(rowname_col = 'Age') %>%
   gt_theme_538() %>%
