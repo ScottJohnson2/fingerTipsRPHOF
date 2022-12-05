@@ -1,0 +1,12 @@
+if(!require('devtools')) install.packages('devtools')
+if(!require('tidyverse')) install.packages('tidyverse')
+if(!require('data.table')) install.packages('data.table')
+if(!require('DBI')) install.packages('DBI')
+if(!require('odbc')) install.packages('odbc')
+if(!require('writexl')) install.packages('writexl')
+if(!require('gt')) install.packages('gt')
+if(!require('paletteer')) install.packages('paletteer')
+if(!require('gtExtras')) install.packages('gtExtras')
+
+
+source('rScripts/fingerTipsR.r')

@@ -1,0 +1,76 @@
+#if(!require('rmarkdown')) install.packages('rmarkdown')
+#if(!require('pandoc')) install.packages('pandoc')
+#if(!require('webshot2')) install.packages('webshot2')
+
+#https://www.ardata.fr/en/flextable-gallery/2022-06-29-clinical-shift-table/
+#https://themockup.blog/posts/2020-09-04-10-table-rules-in-r/
+
+
+#take top 10 indicators from worst data file
+
+tenBest <- betterData %>%
+  slice(1:10) %>%
+  select(IndicatorName)
+
+#standardise indicator names in new DF
+
+tenBest$IndicatorNameSub <- sub('.*?-','',tenBest$IndicatorName)
+
+tenBest$IndicatorNameSub <- gsub("\\s*\\([^\\)]+\\)","",as.character(tenBest$IndicatorNameSub))
+
+tenBest$IndicatorNameSub <- str_remove_all(tenBest$IndicatorNameSub, 'in young people')
+tenBest$IndicatorNameSub <- str_remove_all(tenBest$IndicatorNameSub, 'in children')
+tenBest$IndicatorNameSub <- str_remove_all(tenBest$IndicatorNameSub, 'Under 75')
+
+#standardise indicator names in old DF
+
+betterData$IndicatorNameSub <- sub('.*?-','',betterData$IndicatorName)
+betterData$IndicatorNameSub <- gsub("\\s*\\([^\\)]+\\)","",as.character(betterData$IndicatorNameSub))
+
+betterData$IndicatorNameSub <- str_remove_all(betterData$IndicatorNameSub, 'in young people')
+betterData$IndicatorNameSub <- str_remove_all(betterData$IndicatorNameSub, 'in children')
+betterData$IndicatorNameSub <- str_remove_all(betterData$IndicatorNameSub, 'Under 75')
+
+#bring through all combinations for the ten worst indicators
+
+tableData <- left_join(tenBest, betterData, by = 'IndicatorNameSub')
+
+#remove dups
+
+tableData <- unique(tableData)
+
+#select only fields required
+
+tableData <- tableData <- tableData %>%
+  select(IndicatorNameSub, Sex, Age, combinedRank)
+
+#remove whitespace from indicator names
+
+tableData$IndicatorNameSub <- trimws(tableData$IndicatorNameSub, which = 'both', whitespace = ' ')
+
+#add to GT table format
+
+table <- tableData %>% 
+  group_by(IndicatorNameSub) %>%
+  gt(rowname_col = 'Age') %>%
+  gt_theme_538() %>%
+  tab_stubhead(label = 'Indicator Group') %>%
+  #tab_source_note(md('**data**: PHE Fingertips Public Health Outcomes Framework')) %>%
+  data_color(
+    columns = combinedRank,
+    colors = scales::col_numeric(
+      paletteer::paletteer_d(
+        palette = "ggsci::green_material") %>% as.character(),
+      domain = NULL,
+      reverse = TRUE
+    )
+  )
+
+#create word title
+
+wordTitle <- str_replace_all(paste('wordOutputs/betterTables/',unique(data$AreaName),'PHOFbetterIndicators.docx'),' ','_')
+
+#save output to word
+
+table %>% gtsave(wordTitle)
+

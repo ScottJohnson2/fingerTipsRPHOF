@@ -1,0 +1,76 @@
+#if(!require('rmarkdown')) install.packages('rmarkdown')
+#if(!require('pandoc')) install.packages('pandoc')
+#if(!require('webshot2')) install.packages('webshot2')
+
+#https://www.ardata.fr/en/flextable-gallery/2022-06-29-clinical-shift-table/
+#https://themockup.blog/posts/2020-09-04-10-table-rules-in-r/
+
+
+#take top 10 indicators from worst data file
+
+tenWorst <- worseData %>%
+  slice(1:10) %>%
+  select(IndicatorName)
+
+#standardise indicator names in new DF
+
+tenWorst$IndicatorNameSub <- sub('.*?-','',tenWorst$IndicatorName)
+
+tenWorst$IndicatorNameSub <- gsub("\\s*\\([^\\)]+\\)","",as.character(tenWorst$IndicatorNameSub))
+
+tenWorst$IndicatorNameSub <- str_remove_all(tenWorst$IndicatorNameSub, 'in young people')
+tenWorst$IndicatorNameSub <- str_remove_all(tenWorst$IndicatorNameSub, 'in children')
+tenWorst$IndicatorNameSub <- str_remove_all(tenWorst$IndicatorNameSub, 'Under 75')
+
+#standardise indicator names in old DF
+
+worseData$IndicatorNameSub <- sub('.*?-','',worseData$IndicatorName)
+worseData$IndicatorNameSub <- gsub("\\s*\\([^\\)]+\\)","",as.character(worseData$IndicatorNameSub))
+
+worseData$IndicatorNameSub <- str_remove_all(worseData$IndicatorNameSub, 'in young people')
+worseData$IndicatorNameSub <- str_remove_all(worseData$IndicatorNameSub, 'in children')
+worseData$IndicatorNameSub <- str_remove_all(worseData$IndicatorNameSub, 'Under 75')
+
+#bring through all combinations for the ten worst indicators
+
+tableData <- left_join(tenWorst, worseData, by = 'IndicatorNameSub')
+
+#remove dups
+
+tableData <- unique(tableData)
+
+#select only fields required
+
+tableData <- tableData <- tableData %>%
+                  select(IndicatorNameSub, Sex, Age, combinedRank)
+
+#remove whitespace from indicator names
+
+tableData$IndicatorNameSub <- trimws(tableData$IndicatorNameSub, which = 'both', whitespace = ' ')
+
+#add to GT table format
+
+table <- tableData %>% 
+              group_by(IndicatorNameSub) %>%
+              gt(rowname_col = 'Age') %>%
+              gt_theme_538() %>%
+              tab_stubhead(label = 'Indicator Group') %>%
+              #tab_source_note(md('**data**: PHE Fingertips Public Health Outcomes Framework')) %>%
+              data_color(
+                columns = combinedRank,
+                colors = scales::col_numeric(
+                  paletteer::paletteer_d(
+                    palette = "ggsci::red_material") %>% as.character(),
+                  domain = NULL,
+                  reverse = TRUE
+                )
+              )
+            
+#create word title
+
+wordTitle <- str_replace_all(paste('wordOutputs/worseTables/',unique(data$AreaName),'PHOFworseIndicators.docx'),' ','_')
+
+#save output to word
+
+table %>% gtsave(wordTitle)
+
